@@ -135,6 +135,19 @@ Im TradingView-Chart (innerhalb des dedizierten Chrome-Profils): Watchlist anleg
 | VIX | `CBOE:VIX` oder `TVC:VIX` | Volatility Regime |
 | MAG7 | `NASDAQ:AAPL`, `NASDAQ:MSFT`, `NASDAQ:GOOGL`, `NASDAQ:AMZN`, `NASDAQ:NVDA`, `NASDAQ:META`, `NASDAQ:TSLA` | Einzeln — NDX-Komponenten-Treiber |
 
+**Leveraged Risk-Proxies (Signal-Indikatoren, NICHT zum Halten):**
+| Symbol | TradingView-Ticker | Funktion |
+|---|---|---|
+| UVXY | `AMEX:UVXY` | 1.5x VIX Short-Term — schneller Spike-Detector bei Vol-Expansion |
+| VXX | `BATS:VXX` | VIX Short-Term ETN — Volatility-Term-Structure-Proxy |
+| SQQQ | `NASDAQ:SQQQ` | -3x QQQ — verstärkt sichtbarer Bearish-Move für MNQ-Short-Signal |
+| TQQQ | `NASDAQ:TQQQ` | +3x QQQ — verstärkt sichtbarer Bullish-Move für MNQ-Long-Signal |
+| SOXL | `AMEX:SOXL` | 3x long Semis — NVDA/AMD-Lead-Bestätigung |
+| SOXS | `AMEX:SOXS` | 3x short Semis — Tech-Risk-Off-Detector |
+| SPXU / SPXL | `AMEX:SPXU` / `AMEX:SPXL` | -3x / +3x SPY — breit-Markt Direction-Confirm |
+
+**Hinweis:** Leveraged ETFs leiden an Volatility-Drag bei Hold — nur als **Intraday-Korrelations-/Signal-Indikator** sinnvoll, niemals als Position. Ihre Bewegungen sind oft schneller sichtbar als die unterliegenden Indices, was sie zu guten Frühwarn-Indikatoren macht.
+
 **Empfohlenes Pane-Layout (via `pane_set_layout`):**
 - **4-Pane (2x2):** MNQ | ES | QQQ | VIX  → Hauptkorrelation auf einen Blick
 - **6-Pane:** + NDX + ein MAG7-Schwergewicht (NVDA für Tech-Lead)
