@@ -51,16 +51,21 @@ if ($existing) {
 }
 
 # Sicherstellen: NUR in Users-Gruppe, NICHT in Administrators
-$inUsers = (Get-LocalGroupMember -Group 'Users' -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*\$UserName" }).Count -gt 0
-if (-not $inUsers) {
-    Add-LocalGroupMember -Group 'Users' -Member $UserName
-    Write-Host "[OK] '$UserName' zur Gruppe 'Users' hinzugefuegt." -ForegroundColor Green
+# Note: @(...) wrapper makes .Count work even when Where-Object returns nothing under StrictMode
+$usersMatches = @(Get-LocalGroupMember -Group 'Users' -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*\$UserName" })
+if ($usersMatches.Count -eq 0) {
+    try {
+        Add-LocalGroupMember -Group 'Users' -Member $UserName -ErrorAction Stop
+        Write-Host "[OK] '$UserName' zur Gruppe 'Users' hinzugefuegt." -ForegroundColor Green
+    } catch {
+        Write-Host "[WARN] Konnte '$UserName' nicht zu 'Users' hinzufuegen: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
 } else {
     Write-Host "[SKIP] '$UserName' bereits in 'Users'." -ForegroundColor Yellow
 }
 
-$inAdmins = (Get-LocalGroupMember -Group 'Administrators' -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*\$UserName" }).Count -gt 0
-if ($inAdmins) {
+$adminsMatches = @(Get-LocalGroupMember -Group 'Administrators' -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*\$UserName" })
+if ($adminsMatches.Count -gt 0) {
     Write-Host "[WARN] '$UserName' ist in Administrators! Entferne..." -ForegroundColor Red
     Remove-LocalGroupMember -Group 'Administrators' -Member $UserName
     Write-Host "[OK] '$UserName' aus 'Administrators' entfernt." -ForegroundColor Green
