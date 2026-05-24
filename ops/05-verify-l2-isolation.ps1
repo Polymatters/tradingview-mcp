@@ -66,7 +66,7 @@ Test-Assertion 'MCP-Repo-Pfad existiert' $mcpExists "Test-Path $McpRepoRoot == T
 
 $mcpReadable = $false
 try {
-    $items = Get-ChildItem -Path $McpRepoRoot -ErrorAction Stop
+    $items = @(Get-ChildItem -Path $McpRepoRoot -ErrorAction Stop)
     $mcpReadable = $items.Count -gt 0
 } catch { $mcpReadable = $false }
 Test-Assertion 'Get-ChildItem auf MCP-Repo erfolgreich' $mcpReadable 'Inhalt lesbar'
@@ -79,9 +79,10 @@ $portListening = $null -ne $listening
 Test-Assertion "Port $Port lauscht" $portListening "TCP $Port LISTENING"
 
 if ($portListening) {
-    $loopbackOnly = ($listening | Where-Object {
+    $nonLoopback = @($listening | Where-Object {
         $_.LocalAddress -ne '127.0.0.1' -and $_.LocalAddress -ne '::1'
-    }).Count -eq 0
+    })
+    $loopbackOnly = $nonLoopback.Count -eq 0
     Test-Assertion 'Port lauscht NUR auf Loopback' $loopbackOnly 'Keine 0.0.0.0 / LAN-IPs'
 }
 
