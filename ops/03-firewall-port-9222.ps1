@@ -16,7 +16,8 @@
 param(
     [int]$Port = 9222,
     [string]$AllowRuleName = 'TradingView-MCP-CDP-Allow-Loopback',
-    [string]$BlockRuleName = 'TradingView-MCP-CDP-Block-NonLoopback'
+    [string]$BlockRuleName = 'TradingView-MCP-CDP-Block-NonLoopback',
+    [string]$ResearchUser  = 'HAL01-TVResearch'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -66,12 +67,12 @@ Write-Host ''
 Write-Host "Hinweis: Windows Firewall verarbeitet ALLOW-Regeln vor BLOCK-Regeln" -ForegroundColor Gray
 Write-Host "         bei gleicher Spezifizitaet. Loopback-Allow setzt sich gegen Any-Block durch." -ForegroundColor Gray
 Write-Host ''
-Write-Host "Verifikation nach Chrome-Launch mit --remote-debugging-port=$Port:" -ForegroundColor White
+Write-Host "Verifikation nach Chrome-Launch mit --remote-debugging-port=$Port :" -ForegroundColor White
 Write-Host "  Lokal:        Test-NetConnection 127.0.0.1 -Port $Port   --> TcpTestSucceeded: True" -ForegroundColor Gray
 Write-Host "  Von anderem:  Test-NetConnection <ip> -Port $Port        --> TcpTestSucceeded: False" -ForegroundColor Gray
-Write-Host '  netstat:      netstat -an | findstr :' + $Port -ForegroundColor Gray
-Write-Host '                  muss zeigen: TCP    127.0.0.1:' + $Port + '    LISTENING' -ForegroundColor Gray
-Write-Host '                  NICHT:        TCP    0.0.0.0:' + $Port + '      LISTENING' -ForegroundColor Gray
+Write-Host "  netstat:      netstat -an | findstr :$Port" -ForegroundColor Gray
+Write-Host "                  muss zeigen: TCP    127.0.0.1:$Port    LISTENING" -ForegroundColor Gray
+Write-Host "                  NICHT:        TCP    0.0.0.0:$Port      LISTENING" -ForegroundColor Gray
 Write-Host ''
 Write-Host "=== Schritt 3 abgeschlossen ===" -ForegroundColor Cyan
 Write-Host "Naechster Schritt (als '$ResearchUser' einloggen, dann): .\04-launch-tv-chrome.ps1" -ForegroundColor White
