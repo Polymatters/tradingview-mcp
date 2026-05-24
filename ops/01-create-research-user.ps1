@@ -15,7 +15,7 @@
 param(
     [string]$UserName = 'HAL01-TVResearch',
     [string]$FullName = 'TradingView MCP Research User',
-    [string]$Description = 'L2-isolated account for tradingview-mcp / TV / EzPz research. No broker access.'
+    [string]$Description = 'L2 isolated TV/MCP research, no broker access'
 )
 
 $ErrorActionPreference = 'Stop'
