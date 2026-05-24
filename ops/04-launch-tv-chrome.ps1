@@ -84,7 +84,7 @@ Start-Sleep -Seconds 2
 # Bind-Verifikation
 $listening = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
 if ($listening) {
-    Write-Host "[OK] Chrome lauscht auf Port $Port:" -ForegroundColor Green
+    Write-Host "[OK] Chrome lauscht auf Port ${Port}:" -ForegroundColor Green
     $listening | ForEach-Object {
         $addr = $_.LocalAddress
         $color = if ($addr -eq '127.0.0.1' -or $addr -eq '::1') { 'Green' } else { 'Red' }
