@@ -116,6 +116,46 @@ data_get_study_values
 ```
 Output dokumentieren. Bei bekannten Bugs (z.B. `evaluate is not defined`, `getChartApi is not defined`) — diese Tools fallen aus dem produktiven Workflow.
 
+### 10. Trading-Watchlist konfigurieren
+Im TradingView-Chart (innerhalb des dedizierten Chrome-Profils): Watchlist anlegen mit folgender Multi-Asset-Korrelation für MNQ-Trading.
+
+**Primärinstrument (Trading-Target):**
+| Symbol | TradingView-Ticker | Bemerkung |
+|---|---|---|
+| MNQ | `CME_MINI:MNQ1!` | Continuous Front-Month (auto-rolls) |
+| MNQ (spezifisch) | `CME_MINI:MNQM2026` | Juni 2026 Kontrakt (aktueller Front-Month, Roll Mitte Juni) |
+
+**Korrelations-Layer (Read-Only Context):**
+| Symbol | TradingView-Ticker | Funktion |
+|---|---|---|
+| NDX | `NASDAQ:NDX` | NASDAQ-100 Cash Index — direkter Underlying-Bezug zu MNQ |
+| QQQ | `NASDAQ:QQQ` | NASDAQ-100 ETF — Liquidität/Options-Flow |
+| ES | `CME_MINI:ES1!` | S&P 500 Futures — breite Markt-Beta |
+| SPY | `AMEX:SPY` | S&P 500 ETF — Equity-Cross-Reference |
+| VIX | `CBOE:VIX` oder `TVC:VIX` | Volatility Regime |
+| MAG7 | `NASDAQ:AAPL`, `NASDAQ:MSFT`, `NASDAQ:GOOGL`, `NASDAQ:AMZN`, `NASDAQ:NVDA`, `NASDAQ:META`, `NASDAQ:TSLA` | Einzeln — NDX-Komponenten-Treiber |
+
+**Empfohlenes Pane-Layout (via `pane_set_layout`):**
+- **4-Pane (2x2):** MNQ | ES | QQQ | VIX  → Hauptkorrelation auf einen Blick
+- **6-Pane:** + NDX + ein MAG7-Schwergewicht (NVDA für Tech-Lead)
+- Mehr Panes = mehr Cognitive Load, weniger Detail pro Chart
+
+**Watchlist-Sidebar (zusätzlich zu Panes):**
+- Alle 6 MAG7 + VIX + QQQ + SPY → Live %-Change-Sicht ohne Pane zu wechseln
+- Watchlist erscheint als Spalte rechts im TradingView-UI
+
+### 11. Live-Assistance-Smoke-Test (mit Claude)
+Nach Watchlist-Setup:
+```
+chart_set_symbol("CME_MINI:MNQ1!")
+chart_get_state
+data_get_study_values
+quote_get
+```
+Dann frag Claude z.B.:
+- "Lies QQQ und ES Quote, sag mir wo MNQ relativ zur Korrelation steht"
+- "Wie sind die VIX und QQQ Werte gerade — wie ist das Vol-Regime für MNQ?"
+
 ---
 
 ## Operations-Regeln (Daily Use)
