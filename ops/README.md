@@ -218,25 +218,42 @@ Dann frag Claude z.B.:
 
 ---
 
-## Notfall: Komplettes Teardown
+## Notfall: Komplettes Teardown / Rollback
 
-Falls L2-Setup zurückgesetzt werden soll (z.B. Migration):
+**Dediziertes Rollback-Skript:** `ops\99-rollback-l2-isolation.ps1`
+
+### Standard-Rollback (ACL + Firewall, User + Profil bleiben)
 ```powershell
 # Als Admin:
-Remove-NetFirewallRule -DisplayName 'TradingView-MCP-CDP-Allow-Loopback' -ErrorAction SilentlyContinue
-Remove-NetFirewallRule -DisplayName 'TradingView-MCP-CDP-Block-NonLoopback' -ErrorAction SilentlyContinue
-
-# NTFS Deny entfernen:
-$acl = Get-Acl 'C:\dev\PHOENIX_REBOOT'
-$denyRules = $acl.Access | Where-Object {
-    $_.IdentityReference.Value -like '*\HAL01-TVResearch' -and $_.AccessControlType -eq 'Deny'
-}
-foreach ($r in $denyRules) { $acl.RemoveAccessRule($r) | Out-Null }
-Set-Acl 'C:\dev\PHOENIX_REBOOT' $acl
-
-# User löschen (Vorsicht):
-# Remove-LocalUser HAL01-TVResearch
+cd C:\dev\tradingview-mcp\ops
+.\99-rollback-l2-isolation.ps1
+# Bestätigung 'ROLLBACK' eingeben
 ```
+
+### Rollback mit präzisem ACL-Restore aus Backup
+Wenn 02-Skript ausgeführt wurde, liegt ACL-Backup unter `ops\acl-backups\chimera-root-acl-<timestamp>.sddl`. Restore:
+```powershell
+.\99-rollback-l2-isolation.ps1 -BackupTimestamp 20260524-143012
+```
+
+### Komplett-Teardown (inkl. User + Chrome-Profil)
+```powershell
+.\99-rollback-l2-isolation.ps1 -RemoveUser -RemoveChromeProfile
+# Bestätigung 'ROLLBACK' eingeben
+# Hinweis: User-Profil unter C:\Users\HAL01-TVResearch\ bleibt physisch erhalten (manuell löschen)
+```
+
+### Dry-Run (zeigt was passieren würde, ohne Änderung)
+```powershell
+.\99-rollback-l2-isolation.ps1 -DryRun
+.\99-rollback-l2-isolation.ps1 -DryRun -BackupTimestamp 20260524-143012 -RemoveUser -RemoveChromeProfile
+```
+
+**Was Rollback macht:**
+1. NTFS-ACL auf `C:\dev\PHOENIX_REBOOT` und `C:\dev\tradingview-mcp` restored (aus Backup) oder Deny/Allow-Rules entfernt
+2. Firewall-Rules `TradingView-MCP-CDP-Allow-Loopback` + `TradingView-MCP-CDP-Block-NonLoopback` entfernt
+3. (Optional) Chrome User-Data-Dir entfernt
+4. (Optional) Windows-User-Account entfernt
 
 ---
 

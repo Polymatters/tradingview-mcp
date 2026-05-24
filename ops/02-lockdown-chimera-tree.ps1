@@ -16,7 +16,8 @@
 param(
     [string]$ResearchUser   = 'HAL01-TVResearch',
     [string]$ChimeraRoot    = 'C:\dev\PHOENIX_REBOOT',
-    [string]$McpRepoRoot    = 'C:\dev\tradingview-mcp'
+    [string]$McpRepoRoot    = 'C:\dev\tradingview-mcp',
+    [string]$BackupDir      = 'C:\dev\tradingview-mcp\ops\acl-backups'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -30,6 +31,7 @@ Write-Host "=== L2-Isolation Schritt 2: NTFS-Lockdown auf Chimera-Tree ===" -For
 Write-Host "  Research-User:  $ResearchUser" -ForegroundColor Gray
 Write-Host "  Chimera-Root:   $ChimeraRoot" -ForegroundColor Gray
 Write-Host "  MCP-Repo-Root:  $McpRepoRoot" -ForegroundColor Gray
+Write-Host "  ACL-Backup-Dir: $BackupDir" -ForegroundColor Gray
 Write-Host ''
 
 if (-not (Test-Path $ChimeraRoot)) {
@@ -42,7 +44,38 @@ if (-not $user) {
     throw "User '$ResearchUser' nicht gefunden. Erst Schritt 1 (01-create-research-user.ps1) ausfuehren."
 }
 
+# 0) ACL-Backup VOR jeder Modifikation (Pflicht fuer Rollback)
+Write-Host "[0/3] ACL-Backup vor Modifikation..." -ForegroundColor White
+if (-not (Test-Path $BackupDir)) {
+    New-Item -ItemType Directory -Path $BackupDir | Out-Null
+}
+$ts = Get-Date -Format 'yyyyMMdd-HHmmss'
+$chimeraBackupSddl = Join-Path $BackupDir "chimera-root-acl-$ts.sddl"
+$chimeraBackupTxt  = Join-Path $BackupDir "chimera-root-acl-$ts.txt"
+$mcpBackupSddl     = Join-Path $BackupDir "mcp-repo-acl-$ts.sddl"
+$mcpBackupTxt      = Join-Path $BackupDir "mcp-repo-acl-$ts.txt"
+
+# SDDL-Form (maschinenlesbar, fuer Rollback verwendbar)
+(Get-Acl -Path $ChimeraRoot).Sddl | Out-File -FilePath $chimeraBackupSddl -Encoding UTF8
+# Human-readable Form
+(Get-Acl -Path $ChimeraRoot).Access | Format-List | Out-File -FilePath $chimeraBackupTxt -Encoding UTF8
+
+if (Test-Path $McpRepoRoot) {
+    (Get-Acl -Path $McpRepoRoot).Sddl | Out-File -FilePath $mcpBackupSddl -Encoding UTF8
+    (Get-Acl -Path $McpRepoRoot).Access | Format-List | Out-File -FilePath $mcpBackupTxt -Encoding UTF8
+}
+
+Write-Host "[OK] ACL-Backup geschrieben:" -ForegroundColor Green
+Write-Host "     $chimeraBackupSddl" -ForegroundColor Gray
+Write-Host "     $chimeraBackupTxt" -ForegroundColor Gray
+if (Test-Path $McpRepoRoot) {
+    Write-Host "     $mcpBackupSddl" -ForegroundColor Gray
+    Write-Host "     $mcpBackupTxt" -ForegroundColor Gray
+}
+Write-Host "     -> Rollback via: .\99-rollback-l2-isolation.ps1 -BackupTimestamp $ts" -ForegroundColor Yellow
+
 # 1) Deny FullControl auf Chimera-Tree
+Write-Host ''
 Write-Host "[1/3] Setze Deny FullControl auf '$ChimeraRoot' fuer '$ResearchUser'..." -ForegroundColor White
 $acl = Get-Acl -Path $ChimeraRoot
 $denyRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
