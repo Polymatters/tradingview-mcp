@@ -18,11 +18,10 @@ export function registerHealthTools(server) {
     catch (err) { return jsonResult({ success: false, error: err.message }, true); }
   });
 
-  server.tool('tv_launch', 'Launch TradingView Desktop with Chrome DevTools Protocol (remote debugging) enabled. Auto-detects install location on Mac, Windows, and Linux.', {
-    port: z.coerce.number().optional().describe('CDP port (default 9222)'),
-    kill_existing: z.coerce.boolean().optional().describe('Kill existing TradingView instances first (default true)'),
-  }, async ({ port, kill_existing }) => {
-    try { return jsonResult(await core.launch({ port, kill_existing })); }
-    catch (err) { return jsonResult({ success: false, error: err.message }, true); }
-  });
+  // === DISABLED IN L2 READ-ONLY MODE ========================================
+  // tv_launch spawns external process (TradingView Desktop with --remote-debugging-port).
+  // In L2 setup, Chrome is launched externally and deliberately via
+  // ops/04-launch-tv-chrome.ps1 inside the HAL01-TVResearch user profile.
+  // Disabling tv_launch prevents the MCP from spawning a second uncontrolled
+  // TradingView/Chrome process bypassing the dedicated profile.
 }
