@@ -3,56 +3,35 @@ import { jsonResult } from './_format.js';
 import * as core from '../core/pine.js';
 
 export function registerPineTools(server) {
+  // === L2 PRAGMATIC TEST MODE: Pine READ-ONLY subset ========================
+  // KEEP: read tools (get_source, get_errors, get_console, list_scripts, analyze, check)
+  // DISABLED: mutating/execution tools (set_source, compile, save, smart_compile, new, open)
+  // Reasoning: Pine Script can call fetch() and other network APIs. Inject + compile = arbitrary code execution.
+  // analyze/check are pure validation (offline static analysis + server-side syntax check) — safe.
+
   server.tool('pine_get_source', 'Get current Pine Script source code from the editor', {}, async () => {
     try { return jsonResult(await core.getSource()); }
     catch (err) { return jsonResult({ success: false, error: err.message }, true); }
   });
 
-  server.tool('pine_set_source', 'Set Pine Script source code in the editor', {
-    source: z.string().describe('Pine Script source code to inject'),
-  }, async ({ source }) => {
-    try { return jsonResult(await core.setSource({ source })); }
-    catch (err) { return jsonResult({ success: false, error: err.message }, true); }
-  });
-
-  server.tool('pine_compile', 'Compile / add the current Pine Script to the chart', {}, async () => {
-    try { return jsonResult(await core.compile()); }
-    catch (err) { return jsonResult({ success: false, error: err.message }, true); }
-  });
+  // DISABLED: pine_set_source (injects code into Pine editor)
+  // DISABLED: pine_compile (executes Pine code on chart)
 
   server.tool('pine_get_errors', 'Get Pine Script compilation errors from Monaco markers', {}, async () => {
     try { return jsonResult(await core.getErrors()); }
     catch (err) { return jsonResult({ success: false, error: err.message }, true); }
   });
 
-  server.tool('pine_save', 'Save the current Pine Script (Ctrl+S)', {}, async () => {
-    try { return jsonResult(await core.save()); }
-    catch (err) { return jsonResult({ success: false, error: err.message }, true); }
-  });
+  // DISABLED: pine_save (persists Pine to user's TV account)
 
   server.tool('pine_get_console', 'Read Pine Script console/log output (compile messages, log.info(), errors)', {}, async () => {
     try { return jsonResult(await core.getConsole()); }
     catch (err) { return jsonResult({ success: false, error: err.message }, true); }
   });
 
-  server.tool('pine_smart_compile', 'Intelligent compile: detects button, compiles, checks errors, reports study changes', {}, async () => {
-    try { return jsonResult(await core.smartCompile()); }
-    catch (err) { return jsonResult({ success: false, error: err.message }, true); }
-  });
-
-  server.tool('pine_new', 'Create a new blank Pine Script', {
-    type: z.enum(['indicator', 'strategy', 'library']).describe('Type of script to create'),
-  }, async ({ type }) => {
-    try { return jsonResult(await core.newScript({ type })); }
-    catch (err) { return jsonResult({ success: false, error: err.message }, true); }
-  });
-
-  server.tool('pine_open', 'Open a saved Pine Script by name', {
-    name: z.string().describe('Name of the saved script to open (case-insensitive match)'),
-  }, async ({ name }) => {
-    try { return jsonResult(await core.openScript({ name })); }
-    catch (err) { return jsonResult({ success: false, source: 'internal_api', error: err.message }, true); }
-  });
+  // DISABLED: pine_smart_compile (executes Pine code)
+  // DISABLED: pine_new (creates new Pine Script in TV)
+  // DISABLED: pine_open (changes loaded Pine Script)
 
   server.tool('pine_list_scripts', 'List saved Pine Scripts', {}, async () => {
     try { return jsonResult(await core.listScripts()); }

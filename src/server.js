@@ -1,117 +1,134 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-// === L2 READ-ONLY MODE — KEEP (read-only tool categories) =====================
-import { registerHealthTools } from './tools/health.js';   // tv_launch wird intern disabled
-import { registerChartTools }  from './tools/chart.js';    // mutating tools intern disabled
-import { registerDataTools }   from './tools/data.js';     // alle reads
-import { registerBatchTools }  from './tools/batch.js';    // screenshot-action bereits geblockt
+// === L2 PRAGMATIC TEST MODE ===================================================
+// Active tool surface for the L2-isolated TradingView assistant workflow.
+//
+// KEEP — read + safe navigation/mutation tools:
+//   health (tv_launch disabled in tools/health.js)
+//   chart (all read + navigation tools)
+//   data  (all reads)
+//   batch (screenshot action blocked in core/batch.js)
+//   drawing, alerts, replay, indicators, watchlist, pane, tab
+//   ui    (ui_evaluate disabled in tools/ui.js)
+//   pine  (read-only subset — set/compile/save/smart_compile/new/open disabled in tools/pine.js)
+//
+// HARD-DISABLED (entire module not registered):
+//   capture (capture_screenshot — path-traversal vuln, upstream PR unmerged)
+//
+// HARD-DISABLED (selective inside module):
+//   ui_evaluate                 — arbitrary JavaScript in TV page context
+//   pine_set_source             — injects arbitrary Pine code into editor
+//   pine_compile                — executes injected Pine code
+//   pine_smart_compile          — executes injected Pine code
+//   pine_save                   — persists scripts to user's TV account
+//   pine_new                    — creates new Pine scripts in TV
+//   pine_open                   — switches loaded Pine script
+//   tv_launch                   — spawns external Chrome/TV (bypasses L2 dedicated profile)
+//   chart_set_*  — REMAINS ENABLED (chart navigation is legitimate)
+//
+// Screenshot action of batch_run also throws (see src/core/batch.js).
 
-// === L2 READ-ONLY MODE — DISABLED (mutating / arbitrary-execution) ============
-// Capture: Path-traversal Vuln im Upstream-PR (#2026-05-22) unmerged
-// import { registerCaptureTools }    from './tools/capture.js';
-// UI:      enthält ui_evaluate (beliebiges JavaScript in TV-Page) + alle ui_click/keyboard/mouse
-// import { registerUiTools }         from './tools/ui.js';
-// Pine:    Pine-Editing/Compile/Execute mutiert Chart-Pine-State
-// import { registerPineTools }       from './tools/pine.js';
-// Drawing: draw_shape/clear/remove mutieren Chart-Drawings
-// import { registerDrawingTools }    from './tools/drawing.js';
-// Alerts:  alert_create/delete mutieren TradingView-Alert-Konfig
-// import { registerAlertTools }      from './tools/alerts.js';
-// Replay:  replay_start/step/trade/stop mutieren Chart-Replay-State
-// import { registerReplayTools }     from './tools/replay.js';
-// Indicators: indicator_set_inputs / toggle_visibility mutieren Chart-Studies
-// import { registerIndicatorTools }  from './tools/indicators.js';
-// Watchlist: watchlist_add mutiert TV-Watchlist
-// import { registerWatchlistTools }  from './tools/watchlist.js';
-// Pane:    pane_set_layout/focus/symbol mutieren Layout
-// import { registerPaneTools }       from './tools/pane.js';
-// Tab:     tab_new/close/switch mutieren Tab-State
-// import { registerTabTools }        from './tools/tab.js';
+import { registerHealthTools }     from './tools/health.js';
+import { registerChartTools }      from './tools/chart.js';
+import { registerDataTools }       from './tools/data.js';
+import { registerBatchTools }      from './tools/batch.js';
+import { registerDrawingTools }    from './tools/drawing.js';
+import { registerAlertTools }      from './tools/alerts.js';
+import { registerReplayTools }     from './tools/replay.js';
+import { registerIndicatorTools }  from './tools/indicators.js';
+import { registerWatchlistTools }  from './tools/watchlist.js';
+import { registerUiTools }         from './tools/ui.js';
+import { registerPineTools }       from './tools/pine.js';
+import { registerPaneTools }       from './tools/pane.js';
+import { registerTabTools }        from './tools/tab.js';
+
+// HARD-DISABLED module:
+// import { registerCaptureTools } from './tools/capture.js';
 
 const server = new McpServer(
   {
     name: 'tradingview',
-    version: '2.0.0-l2-readonly',
-    description: 'TradingView MCP in L2 READ-ONLY MODE — chart analysis only. No mutation, no Pine execution, no arbitrary JS.',
+    version: '2.0.0-l2-pragmatic',
+    description: 'TradingView MCP — L2 PRAGMATIC TEST MODE. Live chart assistant for manual trading. Arbitrary-JS + Pine-execute + capture disabled.',
   },
   {
-    instructions: `TradingView MCP — L2 READ-ONLY MODE.
+    instructions: `TradingView MCP — L2 PRAGMATIC TEST MODE.
 
-Only read-only tools are exposed. Mutation, Pine execution, arbitrary JavaScript (ui_evaluate),
-drawings, alerts, replay, pane/tab/watchlist mutation, and screenshot capture are all DISABLED.
+This server is the read+navigation tool surface for a manual-trading assistant.
+Claude can read chart state, change symbols/timeframes/indicators on user request,
+draw levels, manage alerts, navigate panes/tabs, and use Pine read-only validation.
 
-AVAILABLE TOOLS:
+Claude CANNOT:
+- execute arbitrary JavaScript in the TradingView page (ui_evaluate is disabled)
+- inject + run Pine Script code (pine_set_source / compile / smart_compile / save / new / open are disabled)
+- capture screenshots (capture_screenshot disabled pending upstream path-traversal fix)
+- spawn external TradingView/Chrome processes (tv_launch disabled — Chrome is launched via L2 ops scripts)
 
-Health / connection:
-- tv_health_check → confirm CDP connection
-- tv_discover → list available TradingView API paths
-- tv_ui_state → read which panels/buttons are visible (no interaction)
-
-Chart state (read-only):
-- chart_get_state → symbol, timeframe, chart type, indicator list with entity IDs
-- chart_get_visible_range → current date range and bar range
-- symbol_info → current symbol metadata
-- symbol_search → search symbols by query
-
-Live data (read-only):
+CORE READING (use these first):
+- chart_get_state → symbol, timeframe, chart type, indicator list with entity IDs (call once at start)
 - quote_get → real-time price snapshot (last, OHLC, volume)
-- depth_get → order book depth snapshot
-- data_get_ohlcv → price bars (ALWAYS use summary=true unless explicit bar-detail need)
-- data_get_study_values → current numeric values of ALL visible indicators
-- data_get_indicator → single indicator current value
-- data_get_strategy_results / data_get_trades / data_get_equity → strategy tester reads
-- data_get_pine_lines / labels / tables / boxes → custom Pine indicator drawings (read-only)
+- data_get_study_values → ALL visible indicator values (RSI, MACD, etc.) — pass study_filter if known
+- data_get_ohlcv → bars (ALWAYS pass summary=true unless individual bars are needed)
+- data_get_pine_lines / labels / tables / boxes → custom Pine indicator drawings (pass study_filter)
 
-Batch reads:
-- batch_run → multi-symbol read loop (screenshot action is blocked, get_ohlcv works)
-
-DISABLED IN L2 (will not appear in tool list):
-- ui_*  (incl. ui_evaluate — arbitrary JS in TV page)
-- pine_* (Pine editing, compile, execute)
-- draw_* (chart drawing mutations)
-- alert_* (alert creation/deletion)
-- replay_* (chart replay state mutations)
-- indicator_set_inputs / indicator_toggle_visibility (study mutations)
-- chart_set_* (symbol/timeframe/type changes)
-- chart_manage_indicator / chart_scroll_to_date / chart_set_visible_range
-- watchlist_add (only watchlist_get would be read-only but watchlist module disabled)
-- pane_set_* / pane_focus
+NAVIGATION (on explicit user request):
+- chart_set_symbol / chart_set_timeframe / chart_set_type
+- chart_manage_indicator (add/remove studies — use full names: "Relative Strength Index" not "RSI")
+- chart_set_visible_range / chart_scroll_to_date
+- pane_set_layout (s, 2h, 2v, 4, 6, 8) / pane_set_symbol / pane_focus
 - tab_new / tab_close / tab_switch
-- tv_launch (Chrome is launched externally via L2 ops scripts)
-- capture_screenshot (path-traversal mitigation)
+- watchlist_add / watchlist_get
+- indicator_set_inputs / indicator_toggle_visibility
 
-WORKFLOW: navigate symbols / change timeframes / add indicators MANUALLY in the TradingView UI.
-Claude reads the resulting state via the tools above. Claude never mutates the chart.
+DRAWINGS + ALERTS:
+- draw_shape (horizontal_line, trend_line, rectangle, text) — for marking levels
+- draw_list / draw_clear / draw_remove_one
+- alert_create / alert_list / alert_delete
 
-CONTEXT MANAGEMENT:
+REPLAY (for learning / backtesting context):
+- replay_start / replay_step / replay_stop / replay_status
+
+PINE (READ-ONLY validation):
+- pine_get_source / pine_get_errors / pine_get_console / pine_list_scripts
+- pine_analyze (offline static analysis, no compile)
+- pine_check (server-side syntax check, no chart inject)
+
+UI (manual interaction layer):
+- ui_click / ui_hover / ui_keyboard / ui_type_text / ui_scroll / ui_mouse_click
+- ui_open_panel / ui_fullscreen / ui_find_element
+- layout_list / layout_switch
+
+WORKFLOW GUIDANCE:
 - ALWAYS use summary=true on data_get_ohlcv
 - ALWAYS use study_filter on data_get_pine_* tools
-- Call chart_get_state ONCE at start, reuse entity IDs`,
+- Call chart_get_state ONCE at start, reuse entity IDs
+- For Pine Script work, use pine_analyze + pine_check (no live compile available)
+- Prefer minimal-disruption mutations: ask user before changing chart state during active trading session`,
   }
 );
 
-// === L2 READ-ONLY MODE — register only read-only tool groups ==================
-registerHealthTools(server);   // mutating tv_launch internally disabled in tools/health.js
-registerChartTools(server);    // mutating chart_set_* internally disabled in tools/chart.js
-registerDataTools(server);     // all data reads
-registerBatchTools(server);    // batch_run, screenshot action throws
+// === Register active tool groups ==============================================
+registerHealthTools(server);
+registerChartTools(server);
+registerDataTools(server);
+registerBatchTools(server);
+registerDrawingTools(server);
+registerAlertTools(server);
+registerReplayTools(server);
+registerIndicatorTools(server);
+registerWatchlistTools(server);
+registerUiTools(server);
+registerPineTools(server);
+registerPaneTools(server);
+registerTabTools(server);
 
-// === DISABLED (see import comments above) =====================================
+// === DISABLED module ==========================================================
 // registerCaptureTools(server);
-// registerUiTools(server);
-// registerPineTools(server);
-// registerDrawingTools(server);
-// registerAlertTools(server);
-// registerReplayTools(server);
-// registerIndicatorTools(server);
-// registerWatchlistTools(server);
-// registerPaneTools(server);
-// registerTabTools(server);
 
 // Startup notice (stderr so it doesn't interfere with MCP stdio protocol)
-process.stderr.write('⚠  tradingview-mcp  |  L2 READ-ONLY MODE active.\n');
-process.stderr.write('   Mutating tools disabled: ui, pine, drawing, alerts, replay, indicators, watchlist, pane, tab, capture, tv_launch, chart_set_*\n');
+process.stderr.write('⚠  tradingview-mcp  |  L2 PRAGMATIC TEST MODE active.\n');
+process.stderr.write('   Hard-disabled: ui_evaluate, capture_screenshot, pine_set/compile/save/smart_compile/new/open, tv_launch\n');
 process.stderr.write('   Unofficial tool. Not affiliated with TradingView Inc. or Anthropic.\n');
 process.stderr.write('   Ensure your usage complies with TradingView\'s Terms of Use.\n\n');
 

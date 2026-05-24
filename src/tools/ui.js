@@ -85,10 +85,11 @@ export function registerUiTools(server) {
     catch (err) { return jsonResult({ success: false, error: err.message }, true); }
   });
 
-  server.tool('ui_evaluate', 'Execute JavaScript code in the TradingView page context for advanced automation', {
-    expression: z.string().describe('JavaScript expression to evaluate in the page context. Wrap in IIFE for complex logic.'),
-  }, async ({ expression }) => {
-    try { return jsonResult(await core.uiEvaluate({ expression })); }
-    catch (err) { return jsonResult({ success: false, error: err.message }, true); }
-  });
+  // === L2 PRAGMATIC TEST MODE: ui_evaluate REMAINS DISABLED ==================
+  // ui_evaluate executes arbitrary JavaScript in the TradingView page context.
+  // This is the single most powerful tool surface (it can read localStorage,
+  // manipulate session-state, exfiltrate any same-origin data).
+  // For a manual-trading read-only assistant, this capability is not needed.
+  //
+  // server.tool('ui_evaluate', ...);
 }
