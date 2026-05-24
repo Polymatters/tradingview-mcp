@@ -1,0 +1,17 @@
+{
+  "_comment": "L2-Isolation MCP config for HAL01-TVResearch. Place at: C:\\Users\\HAL01-TVResearch\\.claude\\.mcp.json",
+  "_scope": "User-level (NOT project-level). Loads only in HAL01-TVResearch sessions.",
+  "_security": "stdio transport only. No HTTP. Server points to L2-patched pin branch.",
+  "mcpServers": {
+    "tradingview": {
+      "command": "node",
+      "args": [
+        "C:\\dev\\tradingview-mcp\\src\\server.js"
+      ],
+      "env": {
+        "CDP_HOST": "127.0.0.1",
+        "CDP_PORT": "9222"
+      }
+    }
+  }
+}
