@@ -4,7 +4,8 @@ import { registerHealthTools } from './tools/health.js';
 import { registerChartTools } from './tools/chart.js';
 import { registerPineTools } from './tools/pine.js';
 import { registerDataTools } from './tools/data.js';
-import { registerCaptureTools } from './tools/capture.js';
+// L2-ISOLATION: Screenshot tool disabled until upstream PR (path-traversal sanitization fix) is merged.
+// import { registerCaptureTools } from './tools/capture.js';
 import { registerDrawingTools } from './tools/drawing.js';
 import { registerAlertTools } from './tools/alerts.js';
 import { registerBatchTools } from './tools/batch.js';
@@ -74,7 +75,8 @@ registerHealthTools(server);
 registerChartTools(server);
 registerPineTools(server);
 registerDataTools(server);
-registerCaptureTools(server);
+// L2-ISOLATION: capture_screenshot disabled (see import above).
+// registerCaptureTools(server);
 registerDrawingTools(server);
 registerAlertTools(server);
 registerBatchTools(server);
